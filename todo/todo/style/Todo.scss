@@ -1,0 +1,200 @@
+@import url('https://fonts.googleapis.com/css?family=Quicksand');
+
+$color__background : rgb(129, 216, 208);
+$color__border : rgba(0, 0, 0, 0.2);
+$color__title : rgb(255, 253, 208);
+$color__icon: #99999991;
+$color__icon-hover: #ff00d0;
+$font-family__main : 'Quicksand', 'Microsoft JhengHei';
+$font-size__title: 120px;
+$width__container: 600px;
+$border_1px: 1px solid $color__border;
+$border_2px: 2px solid $color__border;
+$border_icon: 3px solid $color__background;
+$icon_size: 20px;
+$height__input: 50px;
+$font-size__create: $height__input /2;
+
+body, html{
+  margin: 0;
+  padding: 0;
+  font-family: $font-family__main;
+  background-color: $color__background;
+}
+
+input{
+  font-family: $font-family__main;
+}
+
+.container{
+  max-width: $width__container;
+  margin: 0 auto;
+  padding: 0 10px;
+}
+
+#title{
+  margin: 0;
+  padding: 20px 0;
+  color: $color__title;
+  font : {
+    size: $font-size__title;
+    weight: 100;
+  }
+  text-align: center;
+}
+
+.todo{
+  border: $border_2px;
+  border-radius: 10px;
+  padding: 30px;
+  box-sizing: border-box;
+  background: #fff;
+  &__input{
+    height: $height__input;
+    font-size: $font-size__create;
+    line-height: $height__input;
+    border: none;
+    border-bottom: $border_1px;
+    outline: none;
+  }
+  &__create{
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    &--text{
+      width: 85%;
+      box-sizing: border-box;
+      background: transparent;
+      margin-bottom: 20px;
+      border-bottom: $border_2px;
+      outline: none;
+      transition: all 0.2s;
+      &:focus ~ &-border{
+        transform: scaleX(1);
+      }
+      &-border{
+        position: absolute;
+        top: 48px;
+        left: 0px;
+        height: 2px;
+        width: 85%;
+        background: $color__background;
+        transform: scaleX(0);
+        transform-origin: 0 0;
+        transition: all 0.3s ease-out;
+      }
+    }
+    &--submit{
+      width: 10%;
+      background-color: $color__background;
+      border-radius: 10px;
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      cursor: pointer;
+      transition: all 0.1s ease-out;
+      &:active{
+        transform: translateY(3px);
+        box-shadow: 0 1px 1px rgba(0,0,0,0.2);
+      }
+    }
+  }
+}
+
+.check{
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 10px;
+  position: relative;
+  &__box{
+    display: none;
+  }
+  &__icon{
+    border: $border_icon;
+    background: transparent;
+    border-radius: 50%;
+    height: $icon_size;
+    width: $icon_size;
+    display: inline-block;
+    box-sizing: border-box;
+  }
+  &__content{
+    display: inline-block;
+    margin-left: ($icon_size / 2);
+    font-size: $icon_size;
+    height: $icon_size;
+    line-height: $icon_size;
+  }
+
+  &:hover &__delete{
+    display: inline;
+  }
+
+  &:hover &__edit{
+    display: inline;
+  }
+
+  &__delete{
+    position: absolute;
+    left: 92%;
+    display: none;
+    .fa-times{
+      transition: all 0.3s ease-out;
+      &:before{
+        content:"\f00d";
+        color: $color__icon;
+        transition: all 0.2s;
+      }
+      &:hover{
+        &:before{
+          color: $color__icon-hover;
+        }
+      }
+    }
+  }
+
+  &__edit{
+    position: absolute;
+    left: 84%;
+    display: none;
+    .fa-edit{
+      transition: all 0.3s ease-out;
+      &:before{
+        content:"\f044";
+        color: $color__icon;
+        transition: all 0.2s;
+      }
+      &:hover{
+        &:before{
+          color: $color__background;
+        }
+      }
+    }
+  }
+}
+
+::-webkit-input-placeholder {
+    color: $color__border;
+}
+
+@media screen and (max-width: 750px){
+  .container{
+    width: 95%;
+  }
+  #title{
+    font-size: 80px;
+  }
+  .todo__create--text{
+    width: 82%;
+  }
+  .todo__create--text-border{
+    width: 80%;
+  }
+  .todo__create--submit{
+    margin-left: 8px;
+    width: 52px;
+  }
+  .check__edit{
+    left: 80%;
+  }
+}
