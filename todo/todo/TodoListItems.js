@@ -26,7 +26,6 @@ class TodoListItems extends Component{
         <div className='check__icon' onClick={this.handleComplete}
         style={items.isCompleted ? iconCompletedStyle : null}></div>
         <div className='check__content' style={items.isCompleted ? contentCompletedStyle : null} onClick={this.handleComplete}>{items.todo}</div>
-        <label className='check__edit'><i className="far fa-edit"></i></label>
         <label className='check__delete' onClick={this.handleRemove}><i className="fas fa-times"></i></label>
       </label>
     )
