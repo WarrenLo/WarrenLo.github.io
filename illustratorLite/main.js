@@ -328,16 +328,17 @@ var app = new Vue({
         hasControls: false,
         originX: 'center',
         originY: 'center',
-        hoverCursor: 'default'
+        hoverCursor: 'default',
+        padding: 1
       });
       if (add) this.canvas.add(point);
       return point;
     },
     drawPath({ svgPath, id, name = 'bezierCurve', stroke = 'black'}) {
-      if (svgPath.length < 1) return;
+      if (svgPath.length < 2) return;
       this.removeObjectByName(name);
       const path = this.convertSvgDataIntoPath(svgPath);
-      const bezierCurve = new fabric.Path(path, {
+      const curve = new fabric.Path(path, {
         id,
         name,
         stroke,
@@ -346,12 +347,14 @@ var app = new Vue({
         hasControls: false,
         hoverCursor: 'default'
       });
-      bezierCurve.on('mousedblclick', this.mousedblclickObj.bind(this));
-      bezierCurve.on('mousedown', this.mousedownObj.bind(this));
-      bezierCurve.on('moved', this.movedObj.bind(this));
-      bezierCurve.on('moving', this.movingObj.bind(this));
-      this.canvas.add(bezierCurve);
-      bezierCurve.sendToBack();
+      curve.on('mousedblclick', this.mousedblclickObj.bind(this));
+      curve.on('mousedown', this.mousedownObj.bind(this));
+      curve.on('moved', this.movedObj.bind(this));
+      curve.on('moving', this.movingObj.bind(this));
+      const sizeMin = 20;
+      [curve.width, curve.height].some(size => {  if (size < sizeMin) return curve.padding = sizeMin - size; });
+      this.canvas.add(curve);
+      curve.sendToBack();
     },
     movingObj(option) {
       if (!option.target) return;
@@ -440,7 +443,7 @@ var app = new Vue({
                     x: path.points[indexPoint - 1],
                     y: point,
                     stroke: 'red',
-                    radius: 3,
+                    radius: 3.5,
                     info: { ...info, indexPoint: indexPoint - 1 },
                     movingFun: this.movingControlPoint.bind(this),
                     movedFun: this.movedTerminalAndControlPoint.bind(this)
@@ -521,6 +524,7 @@ var app = new Vue({
         hoverCursor: 'default'        
       });
       this.canvas.add(line);
+      line.sendToBack();
     },
     findObjectDataById(id) {
       return this.allDatas.filter(data => data.id === id)[0];
