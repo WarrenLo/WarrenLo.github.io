@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Snake Game</title>
+	<style>
+		* {
+			font-family: Arial !important;
+		}
+		html, body {
+			padding: 0;
+			margin: 0;
+		}
+
+		#container {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			flex-direction: column;
+		}
+
+		.pannel {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding: 1rem;
+		}
+		#score, #level {
+			border: 1px solid black;
+			border-radius: 10%;
+			width: 6rem;
+			height: 6rem;
+			box-sizing: border-box;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			flex-direction: column;
+		}
+
+		.label {
+			text-align: center;
+			border-bottom: 1px solid black;
+			width: 100%;
+		}
+
+		.num {
+			font-size: 3rem;
+		}
+
+		#level {
+			margin-right: 0.5rem;
+		}
+
+		#canvas {
+			box-sizing: border-box;
+			border: 1px solid black;
+		}
+
+		.controller {
+			display: none;
+		}
+
+		.btn {
+			outline: none;
+			border: 1px solid black;
+			border-radius: 0.5rem;
+			background-color: #000;
+			color: #fff;
+			cursor: pointer;
+			box-sizing: border-box;
+			padding: 0.5rem 1rem;
+			font-size: 2rem;
+		}
+
+		.btn-small {
+			margin-top: 0.5rem;
+			font-size: 1rem;
+		}
+
+		.center {
+			display: inline-block;
+			position: absolute;
+			left: 50%;
+			top: 50%;
+			transform: translate(-50%, -50%);
+		}
+
+		@media only screen and (max-width: 600px) {
+			.controller {
+				display: block;
+			}
+		}
+	</style>
+</head>
+
+<body>
+	<div id="container">
+		<div class="pannel">
+			<div id="level">
+				<div class="label">level</div>
+				<div id="level_num" class="num">01</div>
+			</div>
+			<div id="score">
+				<div class="label">score</div>
+				<div id="score_num" class="num">00</div>
+			</div>			
+		</div>
+		<canvas id="canvas" width="600" height="600"></canvas>
+		<button id="start_btn" class="btn center" onclick="startGame()">START</button>
+		<button id="restart_btn" class="btn btn-small" onclick="restartGame()" style="display: none;">Play agian</button>
+	</div>
+	<div class="controller">
+		<div class="arr controller_up"> ▲ </div>
+		<div class="arr controller_down"> ▼ </div>
+		<div class="arr controller_left"> ◀ </div>
+		<div class="arr controller_right"> ▶ </div>
+	</div>
+</body>
+
+<script>
+	document.addEventListener("keydown", changeDirection);
+	document.querySelector('.controller_up').addEventListener("click", changeDirectionUp);
+	document.querySelector('.controller_down').addEventListener("click", changeDirectionDown);
+	document.querySelector('.controller_left').addEventListener("click", changeDirectionLeft);
+	document.querySelector('.controller_right').addEventListener("click", changeDirectionRight);
+
+	// color
+	const red = '#e82229';
+	const yellow = '#fcc116';
+	const blue = '#3b5eaa';
+	const grey = '#6c6f72';
+	const black = '#000000';
+	const white = '#fff';
+	const green = '#608447';
+	const board_border = black;
+	const board_background = black;
+	const snake_border = black;
+	const snake_background = white;
+	const food_border = yellow;
+	const food_background = yellow;
+	const happy_border = yellow;
+	const happy_background = yellow;
+	const bday_border = blue;
+	const bday_background = blue;
+	const wen_border = white;
+	const wen_background = white;
+
+	// Get the canvas element
+	const canvas = document.getElementById("canvas");
+	// Return a two dimensional drawing context
+	const canvas_ctx = canvas.getContext("2d");
+	if (screen.width < canvas.width) {
+		canvas.width = round(screen.width, 10) - 10;
+		canvas.height = round(screen.width, 10) - 10;
+	}
+
+	let level = 1;
+	let score = 0;
+	document.getElementById('score_num').innerHTML = score.toString().length > 1 ? `${score}` : `0${score}`;
+	document.getElementById('level_num').innerHTML = level.toString().length > 1 ? `${level}` : `0${level}`;
+	let time = 0;
+	const step = canvas.width >= 600 ? 20 : 10;
+	let snake = genSnake({ x: round(canvas.width / 2, 10), y: round(canvas.height / 2, 10) }, 4, step);
+	const food = { x: 0, y: 0 };
+	// Horizontal velocity
+	let dx = step;
+	// Vertical velocity
+	let dy = 0;
+	let pause = false;
+
+	// Start game
+	function startGame() {
+		document.querySelector('#start_btn').style = 'display: none;'
+		snake = genSnake({ x: round(canvas.width / 2, 10), y: round(canvas.height / 2, 10) }, 4, step);
+		main();
+		genFood();
+	}
+
+	function restartGame() {
+		location.reload();
+	}
+
+	// main function called repeatedly to keep the game running
+	function main(time = 0) {
+
+		// game end
+		if (isGameEnd()) {
+			time += 1;
+			clearBoard();
+			drawFood();
+			setTimeout(() => {
+				drawSnake();
+				setTimeout(() => {
+					main(time);
+					if (time === 4) location.reload();
+				}, 500);
+			}, 500);
+			return;
+		}
+
+		// easter egg
+		if (level === 10 && score === 9) {
+			document.querySelector('#restart_btn').style = 'display: block';
+			clearBoard();
+			drawEasterEgg();
+			setTimeout(() => {
+				clearBoard();
+				drawFood();
+				drawSnake();
+				setTimeout(() => {
+					main();
+				}, 1000);
+			}, 1000);
+			return;
+		}
+
+		// playing game
+		setTimeout(() => {
+			clearBoard();
+			drawFood();
+			drawSnake();
+			moveSnake();
+			// Repeat
+			main();
+		}, speed())
+	}
+
+	function speed() {
+		const maxSpeed = 80;
+		return maxSpeed + (10 - level) * 10;
+	}
+
+	// draw a border around the canvas
+	function clearBoard() {
+		genRect({ x: 0, y: 0 }, canvas.width, canvas.height, null, board_background);
+	}
+
+	function genSnake(head, size, step) {
+		const snake = [];
+		for(let i = 0; i < size; i++) {
+			snake.push({ x: head.x - step * i, y: head.y });
+		}
+		return snake;
+	}
+	// Draw the snake on the canvas
+	function drawSnake() {
+		// Draw each part
+		snake.forEach(drawSnakePart);
+	}
+
+	function drawFood() {
+		genRect(food, step, step, food_border, food_background);
+	}
+
+	// Draw one snake part
+	function drawSnakePart(snakePart) {
+		genRect(snakePart, step, step, snake_border, snake_background);
+	}
+
+	function isHitWall() {
+		const hitLeftWall = snake[0].x < 0;
+		const hitRightWall = snake[0].x > canvas.width - step;
+		const hitToptWall = snake[0].y < 0;
+		const hitBottomWall = snake[0].y > canvas.height - step;
+		return hitLeftWall || hitRightWall || hitToptWall || hitBottomWall;
+	}
+
+	function isSelfBiting() {
+		return snake.some((part, index) => {
+			return snake[0].x === part.x && snake[0].y === part.y && index !== 0;
+		});
+	}
+
+	function isGameEnd() {
+		// return isHitWall();
+		return isSelfBiting();
+	}
+
+	function randomPosition(min, max, step) {
+		return Math.round((Math.random() * (max - min) + min) / step) * step;
+	}
+
+	function genFood() {
+		// Generate a random number the food x-coordinate
+		food.x = round(randomPosition(0, canvas.width - step, step), 10);
+		// Generate a random number for the food y-coordinate
+		food.y = round(randomPosition(0, canvas.height - step, step), 10);
+		// if the new food location is where the snake currently is, generate a new food location
+		if (overlapping()) genFood();
+	}
+
+	function overlapping() {
+		return snake.some(part => {
+			return part.x === food.x && part.y === food.y;
+		});
+	}
+
+	function changeDirection(event) {
+		const LEFT_KEY = 37;
+		const RIGHT_KEY = 39;
+		const UP_KEY = 38;
+		const DOWN_KEY = 40;
+
+		// Prevent the snake from reversing
+		const keyPressed = event.keyCode;
+		if (keyPressed === LEFT_KEY) {
+			changeDirectionLeft();
+		}
+		if (keyPressed === UP_KEY) {
+			changeDirectionUp();
+		}
+		if (keyPressed === RIGHT_KEY) {
+			changeDirectionRight();
+		}
+		if (keyPressed === DOWN_KEY) {
+			changeDirectionDown();
+		}
+	}
+
+	function changeDirectionUp() {
+		// Prevent the snake from reversing
+		const goingDown = dy === step;
+		if (!goingDown) {
+			dx = 0;
+			dy = -1 * step;
+		}
+	}
+	
+	function changeDirectionDown() {
+		// Prevent the snake from reversing
+		const goingUp = dy === -1 * step;
+		if (!goingUp) {
+			dx = 0;
+			dy = step;
+		}
+	}
+	
+	function changeDirectionLeft() {
+		// Prevent the snake from reversing
+		const goingRight = dx === step;
+		if (!goingRight) {
+			dx = -1 * step;
+			dy = 0;
+		}
+	}
+	
+	function changeDirectionRight() {
+		// Prevent the snake from reversing
+		const goingLeft = dx === -1 * step;
+		if (!goingLeft) {
+			dx = step;
+			dy = 0;
+		}
+	}
+
+	function moveSnake() {
+		// Create the new Snake's head
+		const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+		// Ｔhrough the wall
+		if (head.x >= canvas.width) head.x = 0;
+		else if (head.x < 0) head.x = canvas.width - step;
+		if (head.y >= canvas.height) head.y = 0;
+		else if (head.y < 0) head.y = canvas.height - step;
+		// Add the new head to the beginning of snake body
+		snake.unshift(head);
+		const hasEatenFood = snake[0].x === food.x && snake[0].y === food.y;
+		if (hasEatenFood) {
+			// Increase score
+			score++;
+			if (score % 2 === 0) snake.pop();
+			if (score >= 10) {
+				score = 0;
+				level++;
+			}
+			// Display score on screen
+			document.getElementById('score_num').innerHTML = score.toString().length > 1 ? `${score}` : `0${score}`;
+			document.getElementById('level_num').innerHTML = level.toString().length > 1 ? `${level}` : `0${level}`;
+			// Generate new food location
+			genFood();
+		} else {
+			// Remove the last part of snake body
+			snake.pop();
+		}
+	}
+
+	function round(num, unit = 10) {
+		if (typeof num === 'number') {
+			return num - num % unit
+		}
+	}
+
+	function genRect(position, width, height, stroke, fill) {
+		canvas_ctx.fillStyle = fill;
+		canvas_ctx.strokestyle = stroke;
+		canvas_ctx.fillRect(position.x, position.y, width, height);
+		// canvas_ctx.strokeRect(position.x, position.y, width, height);
+	}
+
+	function drawEasterEgg() {
+		happy({ x: step, y: step }, step).forEach(position => {
+			genRect(position, step, step, happy_border, happy_background);
+		});
+		bday({ x: step, y: 8 * step }, step).forEach(position => {
+			genRect(position, step, step, bday_border, bday_background);
+		});
+		wen({ x: step, y: 15 * step }, step).forEach(position => {
+			genRect(position, step, step, wen_border, wen_background);
+		});
+	}
+
+	function happy(shift, step) {
+		const h = ss(H(), shift, step);
+		const a = ss(A(), { x: shift.x * 6, y: shift.y }, step);
+		const p1 = ss(P(), { x: shift.x * 11, y: shift.y }, step);
+		const p2 = ss(P(), { x: shift.x * 16, y: shift.y }, step);
+		const y = ss(Y(), { x: shift.x * 21, y: shift.y }, step);
+		const arr = [...h, ...a, ...p1, ...p2, ...y];
+		return arr;
+	}
+
+	function bday(shift, step) {
+		const b = ss(B(), shift, step);
+		const dash = ss(DASH(), { x: shift.x * 6, y: shift.y }, step);
+		const d = ss(D(), { x: shift.x * 11, y: shift.y }, step);
+		const a = ss(A(), { x: shift.x * 16, y: shift.y }, step);
+		const y = ss(Y(), { x: shift.x * 21, y: shift.y }, step);
+		const arr = [...b, ...dash, ...d, ...a, ...y];
+		return arr;
+	}
+
+	function wen(shift, step) {
+		const w = ss(W(), shift, step);
+		const e = ss(E(), { x: shift.x * 6, y: shift.y }, step);
+		const n = ss(N(), { x: shift.x * 11, y: shift.y }, step);
+		const arr = [...w, ...e, ...n];
+		return arr;
+	}
+
+	function ss(arr, shift, step) {
+		return arr.map(coord => {
+			return {
+				x: coord.x * step + shift.x,
+				y: coord.y * step + shift.y
+			};
+		});
+	}
+
+	function H() {
+		return [
+			{ x: 0, y: 0 },
+			{ x: 0, y: 1 },
+			{ x: 0, y: 2 },
+			{ x: 0, y: 3 },
+			{ x: 0, y: 4 },
+			{ x: 1, y: 2 },
+			{ x: 2, y: 2 },
+			{ x: 3, y: 0 },
+			{ x: 3, y: 1 },
+			{ x: 3, y: 2 },
+			{ x: 3, y: 3 },
+			{ x: 3, y: 4 }
+		]
+	}
+
+	function A() {
+		return [
+			{ x: 0, y: 1 },
+			{ x: 0, y: 2 },
+			{ x: 0, y: 3 },
+			{ x: 0, y: 4 },
+			{ x: 1, y: 0 },
+			{ x: 2, y: 0 },
+			{ x: 1, y: 2 },
+			{ x: 2, y: 2 },
+			{ x: 3, y: 1 },
+			{ x: 3, y: 2 },
+			{ x: 3, y: 3 },
+			{ x: 3, y: 4 }
+		]
+	}
+
+	function P() {
+		return [
+			{ x: 0, y: 1 },
+			{ x: 0, y: 2 },
+			{ x: 0, y: 3 },
+			{ x: 0, y: 4 },
+			{ x: 1, y: 0 },
+			{ x: 2, y: 0 },
+			{ x: 1, y: 2.5 },
+			{ x: 2, y: 2.5 },
+			{ x: 3, y: 1 },
+			{ x: 3, y: 1.5 }
+		]
+	}
+
+	function Y() {
+		return [
+			{ x: 0, y: 0 },
+			{ x: 0, y: 1 },
+			{ x: 0.5, y: 2 },
+			{ x: 1.5, y: 2 },
+			{ x: 1.5, y: 3 },
+			{ x: 1.5, y: 4 },
+			{ x: 2.5, y: 2 },
+			{ x: 3, y: 0 },
+			{ x: 3, y: 1 }
+		]
+	}
+
+	function B() {
+		return [
+			{ x: 0, y: 0 },
+			{ x: 0, y: 1 },
+			{ x: 0, y: 2 },
+			{ x: 0, y: 3 },
+			{ x: 0, y: 4 },
+			{ x: 1, y: 0 },
+			{ x: 2, y: 0 },
+			{ x: 1, y: 2 },
+			{ x: 2, y: 2 },
+			{ x: 1, y: 4 },
+			{ x: 2, y: 4 },
+			{ x: 3, y: 1 },
+			{ x: 3, y: 3 }
+		]
+	}
+
+	function DASH() {
+		return [
+			{ x: 0, y: 2 },
+			{ x: 1, y: 2 },
+			{ x: 2, y: 2 },
+			{ x: 3, y: 2 }
+		]
+	}
+
+	function D() {
+		return [
+			{ x: 0, y: 0 },
+			{ x: 0, y: 1 },
+			{ x: 0, y: 2 },
+			{ x: 0, y: 3 },
+			{ x: 0, y: 4 },
+			{ x: 1, y: 0 },
+			{ x: 2, y: 0 },
+			{ x: 1, y: 4 },
+			{ x: 2, y: 4 },
+			{ x: 3, y: 1 },
+			{ x: 3, y: 2 },
+			{ x: 3, y: 3 }
+		]
+	}
+
+	function W() {
+		return [
+			{ x: 0, y: 0 },
+			{ x: 0, y: 1 },
+			{ x: 0, y: 2 },
+			{ x: 0, y: 3 },
+			{ x: 1.5, y: 1 },
+			{ x: 1.5, y: 2 },
+			{ x: 1.5, y: 3 },
+			{ x: 3, y: 0 },
+			{ x: 3, y: 1 },
+			{ x: 3, y: 2 },
+			{ x: 3, y: 3 },
+			{ x: 0.5, y: 4 },
+			{ x: 2.5, y: 4 },
+		]
+	}
+
+	function E() {
+		return [
+			{ x: 0, y: 0 },
+			{ x: 0, y: 1 },
+			{ x: 0, y: 2 },
+			{ x: 0, y: 3 },
+			{ x: 0, y: 4 },
+			{ x: 1, y: 0 },
+			{ x: 2, y: 0 },
+			{ x: 3, y: 0 },
+			{ x: 1, y: 2 },
+			{ x: 2, y: 2 },
+			{ x: 3, y: 2 },
+			{ x: 1, y: 4 },
+			{ x: 2, y: 4 },
+			{ x: 3, y: 4 }
+		]
+	}
+
+	function N() {
+		return [
+			{ x: 0, y: 0 },
+			{ x: 0, y: 1 },
+			{ x: 0, y: 2 },
+			{ x: 0, y: 3 },
+			{ x: 0, y: 4 },
+			{ x: 3, y: 0 },
+			{ x: 3, y: 1 },
+			{ x: 3, y: 2 },
+			{ x: 3, y: 3 },
+			{ x: 3, y: 4 },
+			{ x: 0.5, y: 0.5 },
+			{ x: 1, y: 1.5 },
+			{ x: 1.5, y: 2 },
+			{ x: 2, y: 2.5 },
+			{ x: 2.5, y: 3 }
+		]
+	}
+
+</script>
+
+</html>
