@@ -55,6 +55,7 @@
 		#canvas {
 			box-sizing: border-box;
 			border: 1px solid black;
+			background-color: black;
 		}
 
 		#toWen {
@@ -97,18 +98,19 @@
 
 		#clue {
 			padding: 0.5rem;
-			color: white;
-			animation-duration: 3s;
-  			animation-iteration-count: 10;
+			color: black;
+			animation-duration: 8s;
 			transition: 20s ease-in;
+			z-index: -1;
 		}
 
 		@keyframes showClue {
 			50% {
-				color: black;
+				z-index: 999;
+				color: white;
 			}
 			100% {
-				color: white;
+				color: black;
 			}
 		}
 
@@ -135,7 +137,7 @@
 		<canvas id="canvas" width="600" height="600"></canvas>
 		<button id="start_btn" class="btn center" onclick="startGame()">START</button>
 		<button id="restart_btn" class="btn btn-small" onclick="restartGame()" style="display: none;">Play agian</button>
-		<div id="clue" class="">
+		<div id="clue" class="center">
 			What makes the desert beautiful, is that somewhere it hides a well...
 		</div>
 	</div>
@@ -185,7 +187,7 @@
 	// }
 
 	let level = 0;
-	let score = 0;
+	let score = 1024;
 	const step = canvas.width >= 600 ? 20 : 10;
 	document.getElementById('score_num').innerHTML = score.toString().length > 1 ? `${score}` : `0${score}`;
 	document.getElementById('level_num').innerHTML = level.toString().length > 1 ? `${level}` : `0${level}`;
