@@ -27,8 +27,8 @@
 		}
 		#score, #level {
 			border: 1px solid black;
-			border-radius: 10%;
-			width: 6rem;
+			border-radius: 0.5rem;
+			width: 8rem;
 			height: 6rem;
 			box-sizing: border-box;
 			display: inline-flex;
@@ -49,11 +49,20 @@
 
 		#level {
 			margin-right: 0.5rem;
+			display: none;
 		}
 
 		#canvas {
 			box-sizing: border-box;
 			border: 1px solid black;
+		}
+
+		#toWen {
+			display: inline-block;
+			background-color: white;
+			width: 600px;
+			display: none;
+			text-align: center;
 		}
 
 		.controller {
@@ -85,6 +94,19 @@
 			transform: translate(-50%, -50%);
 		}
 
+		#clue {
+			padding: 0.5rem;
+			color: white;
+			animation-duration: 3s;
+			transition: 20s ease-in;
+		}
+
+		@keyframes showClue {
+			100% {
+				color: black;
+			}
+		}
+
 		@media only screen and (max-width: 600px) {
 			.controller {
 				display: block;
@@ -97,17 +119,26 @@
 	<div id="container">
 		<div class="pannel">
 			<div id="level">
-				<div class="label">level</div>
-				<div id="level_num" class="num">01</div>
+				<div class="label">Star</div>
+				<div id="level_num" class="num">00</div>
 			</div>
 			<div id="score">
-				<div class="label">score</div>
+				<div class="label">Score</div>
 				<div id="score_num" class="num">00</div>
 			</div>			
 		</div>
 		<canvas id="canvas" width="600" height="600"></canvas>
 		<button id="start_btn" class="btn center" onclick="startGame()">START</button>
 		<button id="restart_btn" class="btn btn-small" onclick="restartGame()" style="display: none;">Play agian</button>
+		<div id="clue" class="">
+			What makes the desert beautiful, is that somewhere it hides a well...
+		</div>
+	</div>
+	<div id="toWen" class="center">
+		此遊戲獻給
+		</br>
+		Ｗen
+		</br>
 	</div>
 </body>
 
@@ -126,8 +157,10 @@
 	const board_background = black;
 	const snake_border = black;
 	const snake_background = white;
-	const food_border = yellow;
-	const food_background = yellow;
+	const food_border = red;
+	const food_background = red;
+	const star_border = yellow;
+	const star_background = yellow;
 	const happy_border = yellow;
 	const happy_background = yellow;
 	const bday_border = blue;
@@ -139,19 +172,24 @@
 	const canvas = document.getElementById("canvas");
 	// Return a two dimensional drawing context
 	const canvas_ctx = canvas.getContext("2d");
-	if (screen.width < canvas.width) {
-		canvas.width = round(screen.width, 10) - 10;
-		canvas.height = round(screen.width, 10) - 10;
-	}
+	// if (screen.width < canvas.width) {
+	// 	canvas.width = round(screen.width, 10) - 10;
+	// 	canvas.height = round(screen.width, 10) - 10;
+	// }
 
-	let level = 1;
-	let score = 0;
+	let level = 0;
+	let score = 1025;
+	const step = canvas.width >= 600 ? 20 : 10;
 	document.getElementById('score_num').innerHTML = score.toString().length > 1 ? `${score}` : `0${score}`;
 	document.getElementById('level_num').innerHTML = level.toString().length > 1 ? `${level}` : `0${level}`;
 	let time = 0;
-	const step = canvas.width >= 600 ? 20 : 10;
+	let starShiningTime = 0;
+	let isAbleToDrawStar = score > 0 && score % 10 === 0;
+	const starShiningDuration = canvas.width / step;
 	let snake = genSnake({ x: round(canvas.width / 2, 10), y: round(canvas.height / 2, 10) }, 4, step);
-	const food = { x: 0, y: 0 };
+	const food = { x: step, y: step };
+	const star = { x: step, y: step };
+	const easterEgg = { x: 0, y: 0 };
 	// Horizontal velocity
 	let dx = step;
 	// Vertical velocity
@@ -164,6 +202,7 @@
 		snake = genSnake({ x: round(canvas.width / 2, 10), y: round(canvas.height / 2, 10) }, 4, step);
 		main();
 		genFood();
+		genStar();
 	}
 
 	function restartGame() {
@@ -181,25 +220,35 @@
 		}
 
 		// easter egg
-		if (level === 10 && score === 9) {
+		if (gameWin()) {
 			document.querySelector('#restart_btn').style = 'display: block';
 			flashEasterEgg()
 			return;
 		}
 
 		// playing game
-		playingGame();
-	}
-
-	function playingGame() {
+		starShiningTime ++;
 		setTimeout(() => {
 			clearBoard();
 			drawFood();
+			if (starShiningTime % starShiningDuration === 0) genStar();
+			if (isAbleToDrawStar) drawStar();
 			drawSnake();
 			moveSnake();
 			// Repeat
 			main();
 		}, speed())
+	}
+
+	function gameWin() {
+		return score >= 1026;
+	}
+
+	function isAbleToTouchEasterEgg() {
+		return score === 1025;
+	}
+
+	function playingGame() {
 	}
 
 	function endingGame() {
@@ -229,8 +278,8 @@
 	}
 
 	function speed() {
-		const maxSpeed = 80;
-		return maxSpeed + (10 - level) * 10;
+		const maxSpeed = 150;
+		return maxSpeed;
 	}
 
 	// draw a border around the canvas
@@ -253,6 +302,10 @@
 
 	function drawFood() {
 		genRect(food, step, step, food_border, food_background);
+	}
+
+	function drawStar() {
+		genRect(star, step, step, star_border, star_background);
 	}
 
 	// Draw one snake part
@@ -289,7 +342,16 @@
 		// Generate a random number for the food y-coordinate
 		food.y = round(randomPosition(0, canvas.height - step, step), 10);
 		// if the new food location is where the snake currently is, generate a new food location
-		if (overlapping()) genFood();
+		if (overlapping() || (food.x === star.x && food.y === star.y) || (easterEgg.x === food.x && easterEgg.y === food.y)) genFood();
+	}
+
+	function genStar() {
+		// Generate a random number the food x-coordinate
+		star.x = round(randomPosition(0, canvas.width - step, step), 10);
+		// Generate a random number for the food y-coordinate
+		star.y = round(randomPosition(0, canvas.height - step, step), 10);
+		// if the new food location is where the snake currently is, generate a new food location
+		if (overlapping() || (food.x === star.x && food.y === star.y) || (easterEgg.x === star.x && easterEgg.y === star.y)) genStar();
 	}
 
 	function overlapping() {
@@ -356,14 +418,18 @@
 		}
 	}
 
-	function moveSnake() {
-		// Create the new Snake's head
-		const head = { x: snake[0].x + dx, y: snake[0].y + dy };
-		// Ｔhrough the wall
+	function throughTheWall(head) {
 		if (head.x >= canvas.width) head.x = 0;
 		else if (head.x < 0) head.x = canvas.width - step;
 		if (head.y >= canvas.height) head.y = 0;
 		else if (head.y < 0) head.y = canvas.height - step;
+	}
+
+	function moveSnake() {
+		// Create the new Snake's head
+		const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+		// Ｔhrough the wall
+		throughTheWall(head);
 		// Add the new head to the beginning of snake body
 		snake.unshift(head);
 		const hasEatenFood = snake[0].x === food.x && snake[0].y === food.y;
@@ -371,18 +437,30 @@
 			// Increase score
 			score++;
 			if (score % 2 === 0) snake.pop();
-			if (score >= 10) {
-				score = 0;
-				level++;
-			}
 			// Display score on screen
 			document.getElementById('score_num').innerHTML = score.toString().length > 1 ? `${score}` : `0${score}`;
-			document.getElementById('level_num').innerHTML = level.toString().length > 1 ? `${level}` : `0${level}`;
 			// Generate new food location
 			genFood();
+			isAbleToDrawStar = score > 0 && score % 5 === 0;
 		} else {
 			// Remove the last part of snake body
 			snake.pop();
+		}
+		if (isAbleToDrawStar) {
+			const hasEatenStar = snake[0].x === star.x && snake[0].y === star.y;
+			if (hasEatenStar) {
+				level++;
+				score += level * 100;
+				document.getElementById('level_num').innerHTML = level.toString().length > 1 ? `${level}` : `0${level}`;
+				document.getElementById('score_num').innerHTML = score.toString().length > 1 ? `${score}` : `0${score}`;
+				genStar();
+				isAbleToDrawStar = false;
+			}
+		}
+		if (isAbleToTouchEasterEgg()) {
+			document.getElementById('clue').style.animationName = 'showClue';
+			const hasTouchEasterEgg = snake[0].x === easterEgg.x && snake[0].y === easterEgg.y;
+			if (hasTouchEasterEgg) document.getElementById('toWen').style.display = "inline-block";
 		}
 	}
 
@@ -400,15 +478,18 @@
 	}
 
 	function drawEasterEgg() {
-		happy({ x: step, y: step }, step).forEach(position => {
+		win({ x: step, y: step }, step).forEach(position => {
 			genRect(position, step, step, happy_border, happy_background);
 		});
-		bday({ x: step, y: 8 * step }, step).forEach(position => {
-			genRect(position, step, step, bday_border, bday_background);
-		});
-		wen({ x: step, y: 15 * step }, step).forEach(position => {
-			genRect(position, step, step, wen_border, wen_background);
-		});
+		// happy({ x: step, y: step }, step).forEach(position => {
+		// 	genRect(position, step, step, happy_border, happy_background);
+		// });
+		// bday({ x: step, y: 8 * step }, step).forEach(position => {
+		// 	genRect(position, step, step, bday_border, bday_background);
+		// });
+		// wen({ x: step, y: 15 * step }, step).forEach(position => {
+		// 	genRect(position, step, step, wen_border, wen_background);
+		// });
 	}
 
 	function happy(shift, step) {
@@ -436,6 +517,14 @@
 		const e = ss(E(), { x: shift.x * 6, y: shift.y }, step);
 		const n = ss(N(), { x: shift.x * 11, y: shift.y }, step);
 		const arr = [...w, ...e, ...n];
+		return arr;
+	}
+
+	function win(shift, step) {
+		const w = ss(W(), shift, step);
+		const i= ss(I(), { x: shift.x * 6, y: shift.y }, step);
+		const n = ss(N(), { x: shift.x * 11, y: shift.y }, step);
+		const arr = [...w, ...i, ...n];
 		return arr;
 	}
 
@@ -609,6 +698,22 @@
 			{ x: 1.5, y: 2 },
 			{ x: 2, y: 2.5 },
 			{ x: 2.5, y: 3 }
+		]
+	}
+
+	function I() {
+		return [
+			{ x: 0, y: 0 },
+			{ x: 1, y: 0 },
+			{ x: 2, y: 0 },
+			{ x: 3, y: 0 },
+			{ x: 1.5, y: 1 },
+			{ x: 1.5, y: 2 },
+			{ x: 1.5, y: 3 },
+			{ x: 0, y: 4 },
+			{ x: 1, y: 4 },
+			{ x: 2, y: 4 },
+			{ x: 3, y: 4 },
 		]
 	}
 
