@@ -59,10 +59,11 @@
 
 		#toWen {
 			display: inline-block;
-			background-color: white;
+			background-color: transparent;
+			color: white;
 			width: 600px;
-			display: none;
 			text-align: center;
+			display: none;
 		}
 
 		.controller {
@@ -98,12 +99,16 @@
 			padding: 0.5rem;
 			color: white;
 			animation-duration: 3s;
+  			animation-iteration-count: 10;
 			transition: 20s ease-in;
 		}
 
 		@keyframes showClue {
-			100% {
+			50% {
 				color: black;
+			}
+			100% {
+				color: white;
 			}
 		}
 
@@ -135,10 +140,11 @@
 		</div>
 	</div>
 	<div id="toWen" class="center">
-		此遊戲獻給
+		此遊戲謹獻給
 		</br>
-		Ｗen
+		<h3>Wen</h3>
 		</br>
+		
 		</br>
 	</div>
 </body>
