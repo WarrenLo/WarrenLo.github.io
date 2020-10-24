@@ -109,20 +109,10 @@
 		<button id="start_btn" class="btn center" onclick="startGame()">START</button>
 		<button id="restart_btn" class="btn btn-small" onclick="restartGame()" style="display: none;">Play agian</button>
 	</div>
-	<div class="controller">
-		<div class="arr controller_up"> ▲ </div>
-		<div class="arr controller_down"> ▼ </div>
-		<div class="arr controller_left"> ◀ </div>
-		<div class="arr controller_right"> ▶ </div>
-	</div>
 </body>
 
 <script>
 	document.addEventListener("keydown", changeDirection);
-	document.querySelector('.controller_up').addEventListener("click", changeDirectionUp);
-	document.querySelector('.controller_down').addEventListener("click", changeDirectionDown);
-	document.querySelector('.controller_left').addEventListener("click", changeDirectionLeft);
-	document.querySelector('.controller_right').addEventListener("click", changeDirectionRight);
 
 	// color
 	const red = '#e82229';
@@ -135,7 +125,7 @@
 	const board_border = black;
 	const board_background = black;
 	const snake_border = black;
-	const snake_background = yellow;
+	const snake_background = white;
 	const food_border = yellow;
 	const food_background = yellow;
 	const happy_border = yellow;
@@ -186,35 +176,22 @@
 		// game end
 		if (isGameEnd()) {
 			time += 1;
-			clearBoard();
-			drawFood();
-			setTimeout(() => {
-				drawSnake();
-				setTimeout(() => {
-					main(time);
-					if (time === 4) location.reload();
-				}, 500);
-			}, 500);
+			endingGame();
 			return;
 		}
 
 		// easter egg
 		if (level === 10 && score === 9) {
 			document.querySelector('#restart_btn').style = 'display: block';
-			clearBoard();
-			drawEasterEgg();
-			setTimeout(() => {
-				clearBoard();
-				drawFood();
-				drawSnake();
-				setTimeout(() => {
-					main();
-				}, 1000);
-			}, 1000);
+			flashEasterEgg()
 			return;
 		}
 
 		// playing game
+		playingGame();
+	}
+
+	function playingGame() {
 		setTimeout(() => {
 			clearBoard();
 			drawFood();
@@ -223,6 +200,32 @@
 			// Repeat
 			main();
 		}, speed())
+	}
+
+	function endingGame() {
+		time += 1;
+		clearBoard();
+		drawFood();
+		setTimeout(() => {
+			drawSnake();
+			setTimeout(() => {
+				main(time);
+				if (time === 4) location.reload();
+			}, 500);
+		}, 500);
+	}
+
+	function flashEasterEgg() {
+		clearBoard();
+		drawEasterEgg();
+		setTimeout(() => {
+			clearBoard();
+			drawFood();
+			drawSnake();
+			setTimeout(() => {
+				main();
+			}, 1000);
+		}, 1000);
 	}
 
 	function speed() {
