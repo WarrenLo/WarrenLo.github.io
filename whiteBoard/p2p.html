@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>White Board</title>
+  <style>
+    span {
+      display: inline-block;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+    }
+    canvas {
+      border: 1px solid black;
+      max-width: 100%;
+      border-radius: 0.5rem;
+      margin: 1rem 0;
+    }
+    #container {
+      padding: 0 1rem;
+    }
+    .my-peer__id {
+      width: 0;
+      border: none;
+      outline: none;
+    }
+    .my-peer__copy {
+      display: none;
+    }
+    .join__input {
+      width: 16rem;
+    }
+    #title {
+      text-align: center;
+      font-size: 3rem;
+      font-weight: bolder;
+    }
+    .board {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="title">Real-time White Board</div>
+  <div id="container">
+    <span class="my-peer__status">Creating Peer...</span><input type="text" class="my-peer__id" readonly /><button class="my-peer__copy">Copy</button>
+    <div class="join">
+      <span class="join__span">Connect with</span>
+      <input class="join__input" type="input" placeholder="Enter peer ID" />
+      <button class="join__btn">Join</button>
+      <div class="join__info"></div>
+    </div>
+    <div class="board">
+      <canvas class="board__canvas"></canvas>
+      <button class="board__btn-clear">Clear Board</button>
+    </div>
+  </div>
+</body>
+<script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
+<script>
+  // Canavs
+  const canvas = document.querySelector('.board__canvas');
+  const context = canvas.getContext('2d');
+  let isMousedown = false;
+  let lastPoint = null;
+  const pathCollection = [];
+  // function
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = canvas.width * 0.6 ;
+  }
+
+  function clearBoard() {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function draw(x1, y1, x2, y2) {
+    context.beginPath();
+    context.moveTo(x1, y1);
+    context.lineTo(x2, y2);
+    context.strokeStyle = 'black';
+    context.lineWidth = 5;
+    context.lineCap = 'round';
+    context.stroke();
+  }
+  // event
+  document.querySelector('.board__btn-clear').addEventListener('click', () => {
+    clearBoard();
+    pathCollection.length = 0;
+    connGroup.forEach(conn => {
+      if (conn && conn.open) {
+        conn.send({
+          action: 'init'
+        });
+      }
+    });
+  })
+  canvas.addEventListener('mousedown', () => {
+    isMousedown = true;
+    lastPoint = null;
+  });
+  canvas.addEventListener('mouseup', () => {
+    isMousedown = false;
+    lastPoint = null;
+    connGroup.forEach((conn, index) => {
+      if (conn && conn.open) {
+        conn.send({
+          action: 'draw',
+          pathCollection
+        });
+      }
+    });
+  });
+  canvas.addEventListener('mousemove', (e) => {
+    if (isMousedown) {
+      const { offsetX, offsetY } = e;
+      if (!lastPoint) {
+        lastPoint = { x: offsetX, y: offsetY };
+        return;
+      }
+      draw(lastPoint.x, lastPoint.y, offsetX, offsetY);
+      pathCollection.push({ x1: lastPoint.x, y1: lastPoint.y, x2: offsetX, y2: offsetY });
+      lastPoint = { x: offsetX, y: offsetY };
+    }
+  });
+  window.onresize = resize;
+  resize();
+
+  // Peer
+  let connGroup = [];
+  // Create Peer Object where we create and receive connections.
+  const myPeer = new Peer(null, {
+    debug: 2
+  });
+
+  /**
+   * peer listeners of evets
+   * 'open', 'connection', 'call', 'close', 'disconnected', 'error'
+   */
+  
+  // 'open' emitted when a connection to the PeerServer is established.
+  myPeer.on('open', (id) => {
+    if (id) {
+      document.querySelector('.my-peer__status').innerHTML = 'My peer ID: ';
+      document.querySelector('.my-peer__id').value = id;
+      document.querySelector('.my-peer__id').style.width = '16rem';
+      document.querySelector('.my-peer__copy').style.display = 'inline-block';
+    }
+  });
+  function connDuplicateCheck(newPeer) {
+    return connGroup.some(conn => {
+      return conn.peer === newPeer
+    });
+  }
+  myPeer.on('connection', (dataConn) => {
+    removeClosedConn();
+    wrapDataConnListeners(dataConn);
+    connGroup.push(dataConn);
+  });
+  myPeer.on('call', () => {
+    console.log('call');
+  });
+  myPeer.on('close', () => {
+    console.log('close');
+  });
+  myPeer.on('disconnected', () => {
+    console.log('disconnected');
+  });
+  myPeer.on('error', () => {
+    console.log('error');
+  });
+  // Join connection
+  const joinBtn = document.querySelector('.join__btn');
+  const joinInput = document.querySelector('.join__input');
+  const joinInfo = document.querySelector('.join__info');
+  joinBtn.addEventListener('click', () => {
+    // Create Peer connection with given peer id
+    const id = joinInput.value;
+    if (id === myPeer.id) {
+      joinInfo.innerHTML = 'Oh Man! Can not connect with yourself!';
+      return;
+    }
+    if (id) {
+      const conn = myPeer.connect(id, {
+        reliable: true
+      });
+      removeClosedConn();
+      wrapDataConnListeners(conn);
+      connGroup.push(conn);
+      joinInfo.innerHTML = `Connecting...`;
+    }
+  });
+  // Wrap Data connection event listerners
+  function wrapDataConnListeners(conn) {
+    conn.on('open', () => {
+      let list = '';
+      connGroup.forEach(conn => list += `${conn.peer} <br> `);
+      joinInfo.innerHTML = `Connecting to <br> ${list}`;
+      if (pathCollection.length > 0 && conn.open) {
+        conn.send({
+          action: 'draw',
+          pathCollection
+        });
+      }
+    });
+    conn.on('data', (data) => {
+      switch(data.action) {
+        case 'draw': {
+          console.log('draw', +new Date());
+          clearBoard();
+          data.pathCollection.forEach(p => {
+            draw(p.x1, p.y1, p.x2, p.y2);
+          });
+          pathCollection.push(...data.pathCollection);
+          // sync other peer
+          syncEvent(data, conn.peer);
+          break;
+        }
+        case 'init': {
+          clearBoard();
+          pathCollection.length = 0;
+          syncEvent(data, conn.peer);
+          break;
+        }
+      }
+    })
+  }
+
+  function syncEvent(data, originalPeer) {
+    connGroup.forEach(otherConn => {
+      if (otherConn.peer === originalPeer) {
+        return;
+      }
+      otherConn.send(data);
+    });
+  }
+  // remove closed connection
+  function removeClosedConn() {
+    connGroup = connGroup.filter(conn => conn.open);
+  }
+
+  // others
+  document.querySelector('.my-peer__copy').addEventListener('click', () => {
+    copyId();
+  })
+  function copyId() {
+    /* Get the text field */
+    const copyText = document.querySelector(".my-peer__id");
+
+    /* Select the text field */
+    copyText.select();
+    copyText.setSelectionRange(0, 99999); /* For mobile devices */
+
+    /* Copy the text inside the text field */
+    document.execCommand("copy");
+  }
+</script>
+
+</html>
