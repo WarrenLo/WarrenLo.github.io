@@ -102,6 +102,33 @@
       }
     });
   })
+  canvas.addEventListener('touchstart', () => {
+    lastPoint = null;
+  });
+  canvas.addEventListener('touchend', () => {
+    lastPoint = null;
+    connGroup.forEach((conn, index) => {
+      if (conn && conn.open) {
+        conn.send({
+          action: 'draw',
+          pathCollection
+        });
+      }
+    });
+  });
+  canvas.addEventListener('touchmove', (e) => {
+    const rect = e.target.getBoundingClientRect();
+    const { clientX, clientY } = e.touches[0];
+    const x = clientX - rect.x;
+    const y = clientY - rect.y;
+    if (!lastPoint) {
+      lastPoint = { x, y };
+      return;
+    }
+    draw(lastPoint.x, lastPoint.y, x, y);
+    pathCollection.push({ x1: lastPoint.x, y1: lastPoint.y, x2: x, y2: y });
+    lastPoint = { x, y };
+  });
   canvas.addEventListener('mousedown', () => {
     isMousedown = true;
     lastPoint = null;
